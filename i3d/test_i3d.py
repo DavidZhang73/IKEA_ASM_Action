@@ -12,55 +12,71 @@ from torch.autograd import Variable
 from torchvision import transforms
 
 import i3d_utils
+import utils
 import videotransforms
 from IKEAActionDataset import IKEAActionVideoClipDataset as Dataset
 from pytorch_i3d import InceptionI3d
 
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-mode', type=str, default='rgb', help='rgb | depth, indicating which data to load')
-parser.add_argument('-frame_skip', type=int, default=1, help='reduce fps by skipping frames')
+parser.add_argument('-frame_skip', type=int, default=2, help='reduce fps by skipping frames')
+parser.add_argument('--frames_per_clip', type=int, default=16, help='number of frames in a clip sequence')
 parser.add_argument('-batch_size', type=int, default=8, help='number of clips per batch')
-parser.add_argument('-db_filename', type=str,
-                    default='/home/sitzikbs/Datasets/ANU_ikea_dataset_smaller/ikea_annotation_db_full',
-                    help='database file')
-parser.add_argument('-model_path', type=str, default='./log/overlap_clips/demo16/',
+parser.add_argument('-model_path', type=str, default='./log/overlap_clips/demo16_s_fs2/',
                     help='path to model save dir')
-parser.add_argument('-device', default='dev3', help='which camera to load')
-parser.add_argument('-model', type=str, default='000090.pt', help='path to model save dir')
-parser.add_argument('-dataset_path', type=str,
-                    default='/home/sitzikbs/Datasets/ANU_ikea_dataset_smaller/', help='path to dataset')
+parser.add_argument('-model', type=str, default='000000.pt', help='path to model save dir')
+parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame', help='path to dataset')
+parser.add_argument(
+    '--annotation_path',
+    type=str,
+    default=r'D:\dataset\ikea_action_dataset_video',
+    help='path to annotations'
+)
 args = parser.parse_args()
 
 
-def run(dataset_path, db_filename, model_path, output_path, frames_per_clip=16, mode='rgb', batch_size=8, device='dev3',
-        testset_filename='../dataset_indexing_files/test_set_demo.txt',
-        trainset_filename='../dataset_indexing_files/train_set_demo.txt', frame_skip=1,
-        action_list_file_name='../dataset_indexing_files/atomic_action_list.txt',
-        action_object_relation_filename='../dataset_indexing_files/action_object_relation_list.txt'):
-    pred_output_filename = os.path.join(output_path, 'pred.npy')
+def run(
+        dataset_path,
+        annotation_path,
+        model_path,
+        output_path,
+        frames_per_clip,
+        frame_skip,
+        mode,
+        batch_size,
+):
+    pred_output_filename = os.path.join(output_path, 'predictions.npy')
     json_output_filename = os.path.join(output_path, 'action_segments.json')
 
     # setup dataset
     test_transforms = transforms.Compose([videotransforms.CenterCrop(224)])
 
-    test_dataset = Dataset(dataset_path, db_filename=db_filename, test_filename=testset_filename,
-                           train_filename=trainset_filename, transform=test_transforms, set='test', camera=device,
-                           frame_skip=frame_skip, frames_per_clip=frames_per_clip, resize=None, mode='img',
-                           input_type=mode, action_list_filename=action_list_file_name,
-                           action_object_relation_filename=action_object_relation_filename)
+    test_dataset = Dataset(
+        dataset_path=dataset_path,
+        annotation_path=annotation_path,
+        transform=test_transforms,
+        index_filename="test_dataset_index.txt",
+        frame_skip=frame_skip,
+        frames_per_clip=frames_per_clip,
+    )
 
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=6,
-                                                  pin_memory=True)
+    test_dataloader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True
+    )
 
     # setup the model
     if mode == 'flow':
         i3d = InceptionI3d(400, in_channels=2)
     else:
         i3d = InceptionI3d(157, in_channels=3)
-    num_classes = test_dataset.num_classes
+    num_classes = len(test_dataset.action_name_list)
     i3d.replace_logits(num_classes)
     checkpoints = torch.load(model_path)
     i3d.load_state_dict(checkpoints["model_state_dict"])  # load trained model
@@ -105,7 +121,7 @@ def run(dataset_path, db_filename, model_path, output_path, frames_per_clip=16, 
 
     np.save(pred_output_filename, {'pred_labels': pred_labels_per_video, 'logits': logits_per_video})
     utils.convert_frame_logits_to_segment_json(logits_per_video, json_output_filename, test_dataset.video_list,
-                                               test_dataset.action_list)
+                                               test_dataset.action_name_list)
 
 
 if __name__ == '__main__':
@@ -113,7 +129,14 @@ if __name__ == '__main__':
     output_path = os.path.join(args.model_path, 'results')
     os.makedirs(output_path, exist_ok=True)
     model_path = os.path.join(args.model_path, args.model)
-    run(dataset_path=args.dataset_path, db_filename=args.db_filename, model_path=model_path,
-        output_path=output_path, frame_skip=args.frame_skip, mode=args.mode, batch_size=args.batch_size,
-        device=args.device)
-    os.system('python3 ../evaluation/evaluate.py --results_path {} --mode vid'.format(output_path))
+    run(
+        dataset_path=args.dataset_path,
+        annotation_path=args.annotation_path,
+        model_path=model_path,
+        output_path=output_path,
+        frame_skip=args.frame_skip,
+        frames_per_clip=args.frames_per_clip,
+        mode=args.mode,
+        batch_size=args.batch_size,
+    )
+    # os.system('python3 ../evaluation/evaluate.py --results_path {} --mode vid'.format(output_path))

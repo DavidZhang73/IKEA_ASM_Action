@@ -83,7 +83,7 @@ def run(
     test_dataset = Dataset(
         dataset_path=dataset_path,
         annotation_path=annotation_path,
-        transform=train_transforms,
+        transform=test_transforms,
         index_filename="test_dataset_index.txt",
         frame_skip=frame_skip,
         frames_per_clip=frames_per_clip,
@@ -217,7 +217,7 @@ def run(
             train_fraction_done = (train_batchind + 1) / train_num_batch
             print('[{}] train Acc: {}, Loss: {:.4f} [{} / {}]'.format(steps, acc.item(), loss.item(), train_batchind,
                                                                       len(train_dataloader)))
-            if (num_iter == num_steps_per_update or train_batchind == len(train_dataloader) - 1):
+            if num_iter == num_steps_per_update or train_batchind == len(train_dataloader) - 1:
                 n_steps = num_steps_per_update
                 if train_batchind == len(train_dataloader) - 1:
                     n_steps = num_iter
