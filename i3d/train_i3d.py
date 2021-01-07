@@ -91,10 +91,6 @@ def run(
 
     print("Number of clips in the test dataset:{}".format(len(test_dataset)))
 
-    # train_size = int(0.8 * len(dataset))
-    # test_size = len(dataset) - train_size
-    # train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
     weights = utils.make_weights_for_balanced_classes(train_dataset.clip_list, train_dataset.clip_label_count)
     sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
 
