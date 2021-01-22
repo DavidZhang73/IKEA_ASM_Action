@@ -41,7 +41,9 @@ class IKEAActionVideoClipDataset:
                     os.path.join(annotation_path, video_name, annotation_filename)
                 )
                 for label in annotation.config.action_label:
-                    if label['name'] not in self.action_name_list:
+                    # TODO: remove reverse
+                    if label['name'].replace(" - rev", "") not in self.action_name_list:
+                        # self.action_name_list.append(label['name'])
                         self.action_name_list.append(label['name'])
                 self.video_name_to_annotation[video_pathname] = annotation
 
@@ -67,8 +69,10 @@ class IKEAActionVideoClipDataset:
 
             for action in annotation.annotation.actions:
                 labels[0, action.start_frame:action.end_frame] = 0  # remove the background label
-                labels[self.action_name_list.index(action.action['name']), action.start_frame:action.end_frame] = 1
-
+                # labels[self.action_name_list.index(action.action['name']), action.start_frame:action.end_frame] = 1
+                # TODO: remove reverse
+                labels[self.action_name_list.index(action.action['name'].replace(" - rev", "")),
+                action.start_frame:action.end_frame] = 1
             video_list.append((video_pathname, labels, num_frames))
 
         return video_list
@@ -90,7 +94,7 @@ class IKEAActionVideoClipDataset:
                     clip_dataset.append((video[0], label, frame_ind, self.frames_per_clip, i, 0))
             if not remaining_frames == 0:
                 frame_pad = self.frames_per_clip - remaining_frames
-                start = n_clips * self.frames_per_clip * self.frame_skip
+                start = n_clips * self.frames_per_clip * self.frame_skip + self.frame_skip
                 end = start + remaining_frames
                 label = video[1][:, start:end:self.frame_skip]
                 label_count = label_count + np.sum(label, axis=1)

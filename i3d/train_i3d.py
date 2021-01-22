@@ -29,7 +29,8 @@ parser.add_argument('--frame_skip', type=int, default=1, help='reduce fps by ski
 parser.add_argument('--frames_per_clip', type=int, default=16, help='number of frames in a clip sequence')
 parser.add_argument('--batch_size', type=int, default=8, help='number of clips per batch')
 parser.add_argument('--logdir', type=str, default='./log/overlap_clips/demo16_s_fs2/', help='path to model save dir')
-parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame', help='path to dataset')
+parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame_small',
+                    help='path to dataset')
 parser.add_argument(
     '--annotation_path',
     type=str,
@@ -40,6 +41,7 @@ parser.add_argument('--refine', action="store_true", help='flag to refine the mo
 parser.add_argument('--refine_epoch', type=int, default=0, help='refine model from this epoch')
 parser.add_argument('--pretrained_model', type=str, default='charades', help='charades | imagenet')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+parser.add_argument('--max_steps', type=int, default=12, help='max number of epochs')
 
 args = parser.parse_args()
 
@@ -56,7 +58,7 @@ def run(
         refine,
         refine_epoch,
         pretrained_model,
-        max_steps=32,
+        max_steps,
 ):
     os.makedirs(logdir, exist_ok=True)
 
@@ -98,7 +100,7 @@ def run(
         train_dataset,
         batch_size=batch_size,
         sampler=sampler,
-        num_workers=0,
+        num_workers=3,
         pin_memory=True
     )
 
@@ -106,7 +108,7 @@ def run(
         test_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=3,
         pin_memory=True
     )
 
@@ -160,7 +162,7 @@ def run(
     test_num_batch = len(test_dataloader)
     refine_flag = True
 
-    while steps < max_steps:  # for epoch in range(num_epochs):
+    while steps <= max_steps:  # for epoch in range(num_epochs):
         print('Step {}/{}'.format(steps, max_steps))
         print('-' * 10)
         if steps <= refine_epoch and refine and refine_flag:
@@ -290,5 +292,6 @@ if __name__ == '__main__':
         refine=args.refine,
         refine_epoch=args.refine_epoch,
         pretrained_model=args.pretrained_model,
-        frames_per_clip=args.frames_per_clip
+        frames_per_clip=args.frames_per_clip,
+        max_steps=args.max_steps
     )

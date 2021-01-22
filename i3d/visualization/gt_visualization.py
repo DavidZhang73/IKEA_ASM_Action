@@ -47,12 +47,12 @@ def visualize(annotation_pathname, video_pathname, output_pathname=None):
 
     bar = tqdm(total=frames)
 
-    def animate(i):
+    def animate(frame_idx):
         flag, frame = cap.read()
         bar.update(1)
         if flag:
             img.set_array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            txt.set_text(", ".join([action_list[i] for i in gt_labels[i]]))
+            txt.set_text(", ".join([action_list[i] for i in gt_labels[frame_idx]]))
             return img, txt
         else:
             plt.close()

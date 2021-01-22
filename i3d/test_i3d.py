@@ -18,7 +18,7 @@ from IKEAActionDataset import IKEAActionVideoClipDataset as Dataset
 from pytorch_i3d import InceptionI3d
 
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-mode', type=str, default='rgb', help='rgb | depth, indicating which data to load')
@@ -27,8 +27,9 @@ parser.add_argument('--frames_per_clip', type=int, default=16, help='number of f
 parser.add_argument('-batch_size', type=int, default=8, help='number of clips per batch')
 parser.add_argument('-model_path', type=str, default='./log/overlap_clips/demo16_s_fs2/',
                     help='path to model save dir')
-parser.add_argument('-model', type=str, default='000000.pt', help='path to model save dir')
-parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame', help='path to dataset')
+parser.add_argument('-model', type=str, default='000010.pt', help='path to model save dir')
+parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame_small',
+                    help='path to dataset')
 parser.add_argument(
     '--annotation_path',
     type=str,
@@ -37,6 +38,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+from tqdm import tqdm
 
 def run(
         dataset_path,
@@ -67,7 +69,7 @@ def run(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=0,
+        num_workers=6,
         pin_memory=True
     )
 
@@ -90,7 +92,8 @@ def run(
     pred_labels_per_video = [[] for i in range(len(test_dataset.video_list))]
     logits_per_video = [[] for i in range(len(test_dataset.video_list))]
     # last_vid_idx = 0
-    for test_batchind, data in enumerate(test_dataloader):
+    bar = tqdm(test_dataloader)
+    for test_batchind, data in enumerate(bar):
         i3d.train(False)
         # get the inputs
         inputs, labels, vid_idx, frame_pad = data
@@ -106,7 +109,11 @@ def run(
         acc = i3d_utils.accuracy_v2(torch.argmax(logits, dim=1), torch.argmax(labels, dim=1))
         avg_acc.append(acc.item())
         n_examples += batch_size
-        print('batch Acc: {}, [{} / {}]'.format(acc.item(), test_batchind, len(test_dataloader)))
+
+        bar.set_postfix({
+            "Batch Acc": acc.item()
+        })
+        # print('batch Acc: {}, [{} / {}]'.format(acc.item(), test_batchind + 1, len(test_dataloader)))
         logits = logits.permute(0, 2, 1)
         logits = logits.reshape(inputs.shape[0] * frames_per_clip, -1)
         pred_labels = torch.argmax(logits, 1).detach().cpu().numpy()
@@ -120,8 +127,11 @@ def run(
     logits_per_video = [np.array(pred_video_logits) for pred_video_logits in logits_per_video]
 
     np.save(pred_output_filename, {'pred_labels': pred_labels_per_video, 'logits': logits_per_video})
-    utils.convert_frame_logits_to_segment_json(logits_per_video, json_output_filename, test_dataset.video_list,
-                                               test_dataset.action_name_list)
+    utils.convert_frame_logits_to_segment_json(
+        logits_per_video,
+        json_output_filename,
+        [video[0] for video in test_dataset.video_list],
+        test_dataset.action_name_list)
 
 
 if __name__ == '__main__':
