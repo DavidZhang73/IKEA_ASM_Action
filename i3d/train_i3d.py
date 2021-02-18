@@ -25,10 +25,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--mode', type=str, default='rgb', help='rgb or flow')
-parser.add_argument('--frame_skip', type=int, default=1, help='reduce fps by skipping frames')
+parser.add_argument('--frame_skip', type=int, default=2, help='reduce fps by skipping frames')  # set to 2 for 10 fps
 parser.add_argument('--frames_per_clip', type=int, default=16, help='number of frames in a clip sequence')
 parser.add_argument('--batch_size', type=int, default=8, help='number of clips per batch')
-parser.add_argument('--logdir', type=str, default='./log/overlap_clips/demo16_s_fs2/', help='path to model save dir')
+parser.add_argument('--logdir', type=str, default='./log/overlap_clips/demo16_s_fs21/', help='path to model save dir')
 parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame_small',
                     help='path to dataset')
 parser.add_argument(
