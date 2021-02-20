@@ -71,9 +71,10 @@ def visualize(annotation_pathname, video_pathname, output_pathname=None):
 
 if __name__ == "__main__":
     # for folder in ["haodong", "jack", "liyuan", "reaching", "yicong", "zheyu"]:
-    for folder in ["liyuan", "reaching", "yicong", "zheyu"]:
-        annotation_pathname = os.path.join(folder, "annotations.json")
-        video_pathname = os.path.join(folder, "scan_video.mp4")
-        output_pathname = os.path.join(folder, "visualization.mp4")
+    dataset_path = r"D:\dataset\ikea_action_dataset_video"
+    for folder in ["haodong"]:
+        annotation_pathname = os.path.join(dataset_path, folder, "annotations.json")
+        video_pathname = os.path.join(dataset_path, folder, "scan_video.mp4")
+        output_pathname = os.path.join(dataset_path, folder, "visualization.mp4")
 
         visualize(annotation_pathname, video_pathname, output_pathname)

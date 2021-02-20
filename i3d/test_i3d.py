@@ -27,7 +27,7 @@ parser.add_argument('--frames_per_clip', type=int, default=16, help='number of f
 parser.add_argument('-batch_size', type=int, default=8, help='number of clips per batch')
 parser.add_argument('-model_path', type=str, default='./log/overlap_clips/demo16_s_fs2/',
                     help='path to model save dir')
-parser.add_argument('-model', type=str, default='000010.pt', help='path to model save dir')
+parser.add_argument('-model', type=str, default='000020.pt', help='path to model save dir')
 parser.add_argument('--dataset_path', type=str, default=r'D:\dataset\ikea_action_dataset_frame_small',
                     help='path to dataset')
 parser.add_argument(
